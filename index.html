@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>텍스트 숫자 암호화/복호화</title>
+</head>
+<body>
+    <h1>Crypto soldier's program ver 2.0</h1>
+    <label for="inputText">원문:</label>
+    <textarea id="inputText" rows="4" cols="50"></textarea><br>
+    <label for="key">Key:</label>
+    <input type="number" id="key" value="3"><br>
+    <button onclick="encrypt()">암호화</button>
+    <button onclick="decrypt()">복호화</button><br>
+    <label for="outputText">결과:</label>
+    <textarea id="outputText" rows="4" cols="50" readonly></textarea>
+
+    <script>
+        function encrypt() {
+            const inputText = document.getElementById('inputText').value;
+            const key = parseInt(document.getElementById('key').value);
+            const encryptedText = encryptText(inputText, key);
+            document.getElementById('outputText').value = encryptedText;
+        }
+
+        function decrypt() {
+            const inputText = document.getElementById('inputText').value;
+            const key = parseInt(document.getElementById('key').value);
+            const decryptedText = decryptText(inputText, key);
+            document.getElementById('outputText').value = decryptedText;
+        }
+
+        function encryptText(text, key) {
+            return text
+                .split('')
+                .map(char => {
+                    const charCode = char.charCodeAt(0);
+                    const encryptedCharCode = charCode + key;
+                    return encryptedCharCode;
+                })
+                .join(' ');
+        }
+
+        function decryptText(text, key) {
+            return text
+                .split(' ')
+                .map(charCode => {
+                    const decryptedCharCode = parseInt(charCode) - key;
+                    return String.fromCharCode(decryptedCharCode);
+                })
+                .join('');
+        }
+    </script>
+</body>
+</html>
