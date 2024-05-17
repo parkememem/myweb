@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crypto soldier's program 2.3 ver</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-size: 16px;
+            background-color: #e4e1df;
+        }
+        h1, label, textarea, input, button {
+            font-size: 16px;
+        }
+        body {
+            background-color: #e4e1df;
+        }
+        #passwordDiv, #content {
+            width: 80%;
+            margin: 0 auto;
+            padding: 10px;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        textarea, input {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #bfc4a4;
+            color: #ffffff;
+            border: 1px solid #000;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #bfc4a4;
+        }
+    </style>
+</head>
+<body>
+    <h1>Crypto soldier's program ver 2.4</h1>
+    <div id="passwordDiv">
+        <label for="password">비밀번호:</label>
+        <input type="password" id="password">
+        <button onclick="login()">로그인</button>
+    </div>
+
+    <div id="content" style="display:none;">
+        <label for="inputText">원문:</label>
+        <textarea id="inputText" rows="4" cols="50"></textarea>
+        <button onclick="clearInputText()">원문 지우기</button>
+        <button onclick="pasteToInputText()">복사된 텍스트 붙여넣기</button><br>
+        <label for="key">Key:</label>
+        <input type="number" id="key" value="3"><br>
+        <button onclick="encrypt()">암호화</button>
+        <button onclick="decrypt()">복호화</button>
+        <button onclick="copyDecryptedText()">암호코드 복사</button><br>
+        <label for="outputText">결과:</label>
+        <textarea id="outputText" rows="4" cols="50" readonly></textarea>
+        <br>
+        <label for="imageInput">이미지 파일:</label>
+        <input type="file" id="imageInput" accept="image/*"><br>
+        <button onclick="encryptImage()">이미지 암호화</button>
+        <button onclick="decryptImage()">이미지 복호화</button><br>
+        <label for="imageOutput">이미지 결과:</label><br>
+        <img id="imageOutput" style="max-width: 100%;">
+    </div>
+
+    <script>
+        function login() {
+            const password = document.getElementById('password').value;
+            
+            if (password === '10905') {
+                document.getElementById('content').style.display = 'block';
+                document.getElementById('passwordDiv').style.display = 'none';
+            } else {
+                alert('비밀번호가 틀렸습니다.');
+            }
+        }
+
+        function clearInputText() {
+            const inputText = document.getElementById('inputText');
+            inputText.value = '';
+        }
+
+        function pasteToInputText() {
+            navigator.clipboard.readText().then(clipText => {
+                const inputText = document.getElementById('inputText');
+                inputText.value = clipText;
+            });
+        }
+
+        function encrypt() {
+            const inputText = document.getElementById('inputText').value;
+            const key = parseInt(document.getElementById('key').value);
+            const encryptedText = encryptText(inputText, key);
+            document.getElementById('outputText').value = encryptedText;
+        }
+
+        function decrypt() {
+            const inputText = document.getElementById('inputText').value;
+            const key = parseInt(document.getElementById('key').value);
+            const decryptedText = decryptText(inputText, key);
+            document.getElementById('outputText').value = decryptedText;
+        }
+
+        function copyDecryptedText() {
+            const outputText = document.getElementById('outputText');
+            outputText.select();
+            document.execCommand('copy');
+        }
+
+        function encryptText(text, key) {
+            return text
+                .split('')
+                .map(char => {
+                    const charCode = char.charCodeAt(0);
+                    const encryptedCharCode = charCode + key;
+                    return encryptedCharCode;
+                })
+                .join(' ');
+        }
+
+        function decryptText(text, key) {
+            return text
+                .split(' ')
+                .map(charCode => {
+                    const decryptedCharCode = parseInt(charCode) - key;
+                    return String.fromCharCode(decryptedCharCode);
+                })
+                .join('');
+        }
+
+        function encryptImage() {
+            const fileInput = document.getElementById('imageInput');
+            const key = parseInt(document.getElementById('key').value);
+            if (fileInput.files.length === 0) {
+                alert('이미지 파일을 선택하세요.');
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const base64String = e.target.result.split(',')[1];
+                const encryptedBase64String = encryptText(base64String, key);
+                document.getElementById('outputText').value = encryptedBase64String;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function decryptImage() {
+            const encryptedBase64String = document.getElementById('outputText').value;
+            const key = parseInt(document.getElementById('key').value);
+            const decryptedBase64String = decryptText(encryptedBase64String, key);
+            const imgSrc = 'data:image/jpeg;base64,' + decryptedBase64String;
+            document.getElementById('imageOutput').src = imgSrc;
+        }
+    </script>
+</body>
+</html>
