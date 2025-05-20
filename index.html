@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>사진 암호화 프로그램</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <h2>📤 사진 암호화 업로드</h2>
+  <input type="file" id="fileInput"><br><br>
+  <input type="password" id="passwordInput" placeholder="암호 입력"><br><br>
+  <button onclick="uploadEncryptedImage()">암호화하여 업로드</button>
+
+  <hr>
+
+  <h2>📥 복호화하여 보기</h2>
+  <input type="text" id="fileIdInput" placeholder="파일 ID 입력"><br><br>
+  <input type="password" id="decryptPasswordInput" placeholder="암호 입력"><br><br>
+  <button onclick="downloadAndDecryptImage()">복호화하여 보기</button>
+  <br><br>
+  <img id="outputImage" style="max-width:400px; display:none;"/>
+
+  <script>
+    const SUPABASE_URL = 'https://kvjhqdpfnzfrjdlbihmm.supabase.co://YOUR_PROJECT.supabase.co'          // 🔁 여기에 본인 URL 입력
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2amhxZHBmbnpmcmpkbGJpaG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc2NjQzOTksImV4cCI6MjA2MzI0MDM5OX0.Qyv7_CMoJPXyjcRflSNruJP3pN9jpH4ZB_61VUQtAWI'                         // 🔁 여기에 본인 키 입력
+    const BUCKET = 'encrypted-images'                                 // 🔁 버킷 이름 확인
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    async function uploadEncryptedImage() {
+      const file = document.getElementById('fileInput').files[0]
+      const password = document.getElementById('passwordInput').value
+
+      if (!file || !password) {
+        alert('파일과 암호를 모두 입력하세요.')
+        return
+      }
+
+      const arrayBuffer = await file.arrayBuffer()
+      const encrypted = await encryptFile(arrayBuffer, password)
+
+      const fileId = crypto.randomUUID()
+      const { error } = await supabase.storage.from(BUCKET).upload(`${fileId}.bin`, encrypted)
+
+      if (error) {
+        alert('업로드 실패: ' + error.message)
+      } else {
+        alert(`✅ 업로드 성공!\n파일 ID: ${fileId}\n이 ID와 암호로 복호화하세요.`)
+      }
+    }
+
+    async function downloadAndDecryptImage() {
+      const fileId = document.getElementById('fileIdInput').value
+      const password = document.getElementById('decryptPasswordInput').value
+
+      if (!fileId || !password) {
+        alert('파일 ID와 암호를 입력하세요.')
+        return
+      }
+
+      const { data, error } = await supabase.storage.from(BUCKET).download(`${fileId}.bin`)
+      if (error || !data) {
+        alert('다운로드 실패: ' + error?.message)
+        return
+      }
+
+      const encryptedBuffer = await data.arrayBuffer()
+      try {
+        const decrypted = await decryptFile(encryptedBuffer, password)
+
+        const blob = new Blob([decrypted])
+        const url = URL.createObjectURL(blob)
+
+        const img = document.getElementById('outputImage')
+        img.src = url
+        img.style.display = 'block'
+
+        // 1회 열람 후 삭제
+        await supabase.storage.from(BUCKET).remove([`${fileId}.bin`])
+      } catch (e) {
+        alert('❌ 복호화 실패: 암호가 틀렸거나 파일이 손상됨')
+      }
+    }
+
+    async function encryptFile(data, password) {
+      const pwUtf8 = new TextEncoder().encode(password)
+      const pwHash = await crypto.subtle.digest('SHA-256', pwUtf8)
+      const iv = crypto.getRandomValues(new Uint8Array(12))
+
+      const key = await crypto.subtle.importKey(
+        'raw', pwHash, { name: 'AES-GCM' }, false, ['encrypt']
+      )
+
+      const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv }, key, data
+      )
+
+      const result = new Uint8Array(iv.byteLength + encrypted.byteLength)
+      result.set(iv, 0)
+      result.set(new Uint8Array(encrypted), iv.byteLength)
+      return result
+    }
+
+    async function decryptFile(encryptedData, password) {
+      const pwUtf8 = new TextEncoder().encode(password)
+      const pwHash = await crypto.subtle.digest('SHA-256', pwUtf8)
+
+      const iv = encryptedData.slice(0, 12)
+      const data = encryptedData.slice(12)
+
+      const key = await crypto.subtle.importKey(
+        'raw', pwHash, { name: 'AES-GCM' }, false, ['decrypt']
+      )
+
+      return await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: new Uint8Array(iv) }, key, data
+      )
+    }
+  </script>
+</body>
+</html>
